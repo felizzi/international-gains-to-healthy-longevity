@@ -3,11 +3,11 @@ Quantify gains from changes in S and H across countries and time
 	 Based on baseline Murphy and Topel model with observed H and S curves
 """
 
-if occursin("jashwin", pwd())
-    cd("C://Users/jashwin/Documents/GitHub/international-gains-to-healthy-longevity/")
-else
-    cd("/Users/julianashwin/Documents/GitHub/international-gains-to-healthy-longevity/")
-end
+#if occursin("jashwin", pwd())
+#    cd("C://Users/jashwin/Documents/GitHub/international-gains-to-healthy-longevity/")
+#else
+    cd("C://Users//zilef//OneDrive//Documents//Longevity_Scott//international-gains-to-healthy-longevity")
+#end
 
 using Statistics, Parameters, DataFrames
 using QuadGK, NLsolve, Roots, FiniteDifferences, Interpolations
@@ -32,8 +32,9 @@ GDP_df.real_gdp_usd = parse.([Float64], GDP_df.real_gdp_usd)
 # FX rate
 GDP_df.fx_rate = GDP_df.real_gdp_lc./GDP_df.real_gdp_usd
 
-
-
+print("GDP data imported\n")
+GDP_df
+print()
 
 # Import empirical mortality curve by cause
 mort_df = CSV.read("data/GBD/mortality_data.csv", DataFrame, ntasks = 1)
@@ -59,9 +60,13 @@ export_folder = "figures/Olshansky_plots/"
 Define options and parameters
 """
 # Biological model
+print("Doing Biological Parameters\n")
 bio_pars = BiologicalParameters()
+print("Done Biological Parameters\n")
 # Economic model
+print("Doing Economic Parameters\n")
 econ_pars = EconomicParameters()
+print("Done Economic Parameters\n")
 # Options (slimmed down)
 opts = (param = :none, bio_pars0 = deepcopy(bio_pars), AgeGrad = 20, AgeRetire = 65,
 	redo_z0 = false, prod_age = false, age_start = 0, no_compress = false, Wolverine =0)
@@ -74,6 +79,8 @@ countries = unique(GDP_df.location_name)
 years = unique(GDP_df.year)
 last_year = maximum(years) # can't work out health benefit here as no previous year
 
+print(countries)
+print(countries[1])
 # Remove poorer countries as the model doesn't really work for them?
 #filter!(e -> e ∉["Bangladesh","A"], countries)
 
@@ -94,6 +101,7 @@ for ii in 1:nrow(results_df)
 	country = results_df.country[ii]
 	year = results_df.year[ii]
 	###
+	print("Country: ", country, " Year: ", year, "\n")
 	# Extract the relevant data
 	###
 	# Population structure
@@ -117,6 +125,10 @@ for ii in 1:nrow(results_df)
 		econ_pars = EconomicParameters()
 		vars_df = vars_df_from_biodata(bio_pars, econ_pars, opts, mort_orig, mort_new,
 			health_orig, health_new, pop_structure, VSL_target)
+		if year == 2019 && country == "United States of America"
+			## save the vars_df for the US to a csv file 
+			CSV.write("data/GBD/vars_df_US_2019.csv", vars_df)
+		end
 		# Populate the rest of the results_df row
 		results_df.population[ii] = round(N/1e6, digits = 1)
 		results_df.real_gdp[ii] = round(GDP_est/1e9, digits = 1)
@@ -131,8 +143,6 @@ for ii in 1:nrow(results_df)
 	else
 		results_df[ii,results_vars] .= NaN
 	end
-
-
 	next!(prog)
 end
 
